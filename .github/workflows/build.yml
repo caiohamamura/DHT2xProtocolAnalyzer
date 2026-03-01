@@ -38,14 +38,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Clone Saleae Analyzer SDK
-        run: |
-          git clone https://github.com/saleae/AnalyzerSDK.git
-
-      - name: Setup MSBuild
-        if: matrix.os == 'windows-latest'
-        uses: microsoft/setup-msbuild@v2
+        with:
+          submodules: recursive
+          fetch-depth: 0
 
       - name: Setup MSBuild x64
         if: matrix.os == 'windows-latest'
