@@ -1,0 +1,76 @@
+name: Build Saleae Analyzer (CMake Multi-Platform)
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            build_type: Release
+            generator: "Ninja"
+            arch: x64
+            lib_ext: dll
+            output_dir: build
+
+          - os: ubuntu-latest
+            build_type: Release
+            generator: "Unix Makefiles"
+            arch: ""
+            lib_ext: so
+            output_dir: release
+
+          - os: macos-latest
+            build_type: Release
+            generator: "Unix Makefiles"
+            arch: ""
+            lib_ext: dylib
+            output_dir: release
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Clone Saleae Analyzer SDK
+        run: |
+          git clone https://github.com/saleae/AnalyzerSDK.git
+
+      - name: Setup MSBuild
+        if: matrix.os == 'windows-latest'
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup MSBuild x64
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure CMake
+        run: >
+          cmake -S . -B build
+          -G "${{ matrix.generator }}"
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DANALYZER_SDK_DIR=${{ github.workspace }}/AnalyzerSDK
+
+      - name: Build
+        run: |
+          cmake --build build --config ${{ matrix.build_type }}
+
+      - name: List build outputs
+        shell: bash
+        run: |
+          find . -name "*.${{ matrix.lib_ext }}" -not -path "*/.git/*"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ matrix.output_dir }}/*.${{ matrix.lib_ext }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

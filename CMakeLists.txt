@@ -7,6 +7,7 @@ project(CustomAnalyzer LANGUAGES CXX)
 # ------------------------------------------------------------
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_compile_options(-w)
 
