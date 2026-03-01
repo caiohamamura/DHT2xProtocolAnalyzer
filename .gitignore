@@ -4,3 +4,6 @@ Release/
 *.VC.opendb
 *.suo
 *.sln.ecd
+.vs
+*.vcxproj.user
+build

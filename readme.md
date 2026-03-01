@@ -5,11 +5,37 @@ This plugin implements a 1-wire like decoder. Default timings are based on the d
 ![Overview Screenshot](/images/screenshot1.png)
 
 # Build Instructions
-To build on Windows, open the visual studio project in the Visual Studio folder, and build. The Visual Studio solution has configurations for 32 bit and 64 bit builds. You will likely need to switch the configuration to 64 bit and build that in order to get the analyzer to load in the Windows software.
+This project now uses **CMake** for all platforms (Windows, Linux, and macOS).
 
-To build on Linux or OSX, run the build_analyzer.py script. If you are running on Linux 64 bit, remove libAnalyzer.so from AnalyzerSDK/lib and then rename libAnalyzer64.so to libAnalyzer.so. Be sure to include submodules when cloning, for example git clone --recursive https://github.com/jakeson21/DHT2xProtocolAnalyzer.git. The compiled libraries can be found in the newly created debug and release folders.
+Be sure to clone with submodules:
 
-	python build_analyzer.py
+```bash
+git clone --recursive https://github.com/jakeson21/DHT2xProtocolAnalyzer.git
+cd DHT2xProtocolAnalyzer
+```
+
+Then from the project root, simply run:
+
+```bash
+cmake -B build
+cmake --build build
+```
+
+## Windows Requirements
+
+On Windows, you must previously:
+
+1. Install Visual Studio Build Tools (with C++ support and CMake)
+1. Open the Developer Command Prompt for Visual Studio (or x64 Native Tools Command Prompt for VS).
+
+Then just run `cmake` commands as in previous section.
+
+In windows 11 you can install the configured Visual Studio Build Tools by running:
+
+```pwsh
+winget install Microsoft.VisualStudio.2022.BuildTools --force --override "--wait --passive --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows11SDK.26100 --add Microsoft.VisualStudio.Component.VC.CMake.Project"
+```
+
 
 To debug on Windows, please first review the article here:
 
