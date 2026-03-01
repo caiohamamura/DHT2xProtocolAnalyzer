@@ -6,3 +6,4 @@ Release/
 *.sln.ecd
 .vs
 *.vcxproj.user
+build
