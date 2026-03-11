@@ -32,8 +32,13 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        arch: [x86_64, arm64]
-        logic: [1,2]
+        include:
+          - arch: x86_64
+            logic: 1
+          - arch: x86_64
+            logic: 2
+          - arch: arm64
+            logic: 2
 
     steps:
     - uses: actions/checkout@v4
@@ -63,8 +68,28 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Configure
-      run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DLOGIC=${{ matrix.logic }}
+    - name: Install gcc-9 and patchelf (Logic 1 only)
+      if: matrix.logic == 1
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-9 g++-9 patchelf
+
+    - name: Configure (Logic 1)
+      if: matrix.logic == 1
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DLOGIC=1 \
+          -DCMAKE_C_COMPILER=gcc-9 \
+          -DCMAKE_CXX_COMPILER=g++-9
+
+    - name: Configure (Logic 2)
+      if: matrix.logic == 2
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DLOGIC=2
+
 
     - name: Build
       run: cmake --build build

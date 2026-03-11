@@ -12,12 +12,18 @@ endif()
 
 # Fetch the Analyzer SDK if the target does not already exist.
 if(NOT TARGET Saleae::AnalyzerSDK)
+    if(LOGIC EQUAL 1)
+        set(ANALYZER_SDK_TAG "temp-1.2.40")
+    else()
+        set(ANALYZER_SDK_TAG "master")
+    endif()
+
     FetchContent_Declare(
         analyzersdk
         GIT_REPOSITORY https://github.com/saleae/AnalyzerSDK.git
-        GIT_TAG        master
-        GIT_SHALLOW    True
-        GIT_PROGRESS   True
+        GIT_TAG        ${ANALYZER_SDK_TAG}
+        GIT_SHALLOW    TRUE
+        GIT_PROGRESS   TRUE
     )
 
     FetchContent_GetProperties(analyzersdk)
@@ -54,4 +60,18 @@ function(add_analyzer_plugin TARGET)
 
     set_target_properties(${TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ANALYZER_DESTINATION}
                                                LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${ANALYZER_DESTINATION})
+
+    if(LOGIC EQUAL 1 AND UNIX AND NOT APPLE)
+        find_program(PATCHELF_EXECUTABLE patchelf)
+
+        if(PATCHELF_EXECUTABLE)
+            add_custom_command(TARGET ${TARGET} POST_BUILD
+                COMMAND ${PATCHELF_EXECUTABLE}
+                    --replace-needed libAnalyzer.so libanalyzer.so
+                    $<TARGET_FILE:${TARGET}>
+                COMMENT "Fixing AnalyzerSDK library case mismatch"
+            )
+        endif()
+
+    endif()
 endfunction()

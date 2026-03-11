@@ -8,7 +8,9 @@ DHT22ProtocolAnalyzer::DHT22ProtocolAnalyzer()
   mSimulationInitilized(false)
 {
     SetAnalyzerSettings(mSettings.get());
+    #ifdef LOGIC2
     UseFrameV2();
+    #endif
 }
 
 DHT22ProtocolAnalyzer::~DHT22ProtocolAnalyzer()
