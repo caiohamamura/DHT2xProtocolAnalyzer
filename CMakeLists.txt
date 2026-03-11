@@ -13,6 +13,22 @@ endif()
 
 message(STATUS "Building for Logic version: ${LOGIC}")
 
+
+if(APPLE)
+    list(GET CMAKE_OSX_ARCHITECTURES 0 ARCH)
+else()
+    set(ARCH ${CMAKE_SYSTEM_PROCESSOR})
+endif()
+
+message("Build architecture: ${ARCH}")
+
+if(ARCH STREQUAL "arm64")
+    set(LIB_DIR lib_arm64)
+elseif(ARCH STREQUAL "x86_64")
+    set(LIB_DIR lib_x86_64)
+endif()
+
+
 # ------------------------------------------------------------
 # Compiler settings
 # ------------------------------------------------------------
@@ -56,4 +72,4 @@ file(GLOB ANALYZER_SOURCES
 
 set(SOURCES ${ANALYZER_SOURCES})
 
-add_analyzer_plugin(${PROJECT_NAME}_V${LOGIC} SOURCES ${SOURCES})
+add_analyzer_plugin(${PROJECT_NAME}_${CMAKE_SYSTEM_NAME}_${ARCH}_V${LOGIC} SOURCES ${SOURCES})
