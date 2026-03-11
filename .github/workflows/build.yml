@@ -10,7 +10,7 @@ on:
 
 jobs:
   windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
     strategy:
       matrix:
         logic: [1,2]
@@ -55,7 +55,7 @@ jobs:
         path: build/Analyzers/*.so
 
   linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         logic: [1,2]

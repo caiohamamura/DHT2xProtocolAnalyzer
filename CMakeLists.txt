@@ -14,6 +14,9 @@ endif()
 message(STATUS "Building for Logic version: ${LOGIC}")
 
 
+# ------------------------------------------------------------
+# MacOS Compatibility Layer
+# ------------------------------------------------------------
 if(APPLE)
     list(GET CMAKE_OSX_ARCHITECTURES 0 ARCH)
 else()
