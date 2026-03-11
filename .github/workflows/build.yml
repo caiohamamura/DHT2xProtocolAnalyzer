@@ -17,6 +17,8 @@ jobs:
       run: |
         cmake -B ${{github.workspace}}/build -A x64
         cmake --build ${{github.workspace}}/build --config Release
+        cmake -B ${{github.workspace}}/build -A x64 -DLOGIC=1
+        cmake --build ${{github.workspace}}/build --config Release
     - name: Upload windows build
       uses: actions/upload-artifact@v4
       with:
@@ -31,6 +33,10 @@ jobs:
         cmake -B ${{github.workspace}}/build/x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=x86_64
         cmake --build ${{github.workspace}}/build/x86_64
         cmake -B ${{github.workspace}}/build/arm64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64
+        cmake --build ${{github.workspace}}/build/arm64
+        cmake -B ${{github.workspace}}/build/x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=x86_64 -DLOGIC=1
+        cmake --build ${{github.workspace}}/build/x86_64
+        cmake -B ${{github.workspace}}/build/arm64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 -DLOGIC=1
         cmake --build ${{github.workspace}}/build/arm64
     - name: Upload MacOS x86_64 build
       uses: actions/upload-artifact@v4
@@ -49,6 +55,8 @@ jobs:
     - name: Build
       run: |
         cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
+        cmake --build ${{github.workspace}}/build
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release -DLOGIC=1
         cmake --build ${{github.workspace}}/build
       env:
         CC:   gcc-10

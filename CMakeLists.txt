@@ -57,4 +57,4 @@ file(GLOB ANALYZER_SOURCES
 
 set(SOURCES ${ANALYZER_SOURCES})
 
-add_analyzer_plugin(${PROJECT_NAME} SOURCES ${SOURCES})
+add_analyzer_plugin(${PROJECT_NAME}_V${LOGIC} SOURCES ${SOURCES})
