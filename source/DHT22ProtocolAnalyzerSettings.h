@@ -28,10 +28,10 @@ public:
 	DHTxTYPE mDHTxType;
 
 protected:
-	std::auto_ptr< AnalyzerSettingInterfaceChannel >	mInputChannelInterface;
-	std::auto_ptr< AnalyzerSettingInterfaceInteger >	mLongPulseInterface;
-	std::auto_ptr< AnalyzerSettingInterfaceInteger >	mShortPulseInterface;
-	std::auto_ptr< AnalyzerSettingInterfaceNumberList >	mDHTxTypeInterface;
+	std::unique_ptr< AnalyzerSettingInterfaceChannel >	mInputChannelInterface;
+	std::unique_ptr< AnalyzerSettingInterfaceInteger >	mLongPulseInterface;
+	std::unique_ptr< AnalyzerSettingInterfaceInteger >	mShortPulseInterface;
+	std::unique_ptr< AnalyzerSettingInterfaceNumberList >	mDHTxTypeInterface;
 	
 };
 

@@ -28,8 +28,8 @@ public:
 	virtual bool NeedsRerun();
 
 protected: //vars
-	std::auto_ptr< DHT22ProtocolAnalyzerSettings > mSettings;
-	std::auto_ptr< DHT22ProtocolAnalyzerResults > mResults;
+	std::unique_ptr< DHT22ProtocolAnalyzerSettings > mSettings;
+	std::unique_ptr< DHT22ProtocolAnalyzerResults > mResults;
 	AnalyzerChannelData* mOneWire;
 
 	DHT22ProtocolSimulationDataGenerator mSimulationDataGenerator;
