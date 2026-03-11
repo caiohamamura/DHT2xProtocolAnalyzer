@@ -1,71 +1,81 @@
-name: Build Saleae Analyzer (CMake Multi-Platform)
+name: Build
 
 on:
   push:
+    branches: [master]
     tags:
-      - "v*"
-  workflow_dispatch:
+      - '*'
+  pull_request:
+    branches: [master]
 
 jobs:
-  build:
-    name: Build on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            build_type: Release
-            generator: "Ninja"
-            arch: x64
-            lib_ext: dll
-            output_dir: build
-
-          - os: ubuntu-latest
-            build_type: Release
-            generator: "Unix Makefiles"
-            arch: ""
-            lib_ext: so
-            output_dir: release
-
-          - os: macos-latest
-            build_type: Release
-            generator: "Unix Makefiles"
-            arch: ""
-            lib_ext: dylib
-            output_dir: release
-
+  windows:
+    runs-on: windows-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Setup MSBuild x64
-        if: matrix.os == 'windows-latest'
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Configure CMake
-        run: >
-          cmake -S . -B build
-          -G "${{ matrix.generator }}"
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-          -DANALYZER_SDK_DIR=${{ github.workspace }}/AnalyzerSDK
-
-      - name: Build
-        run: |
-          cmake --build build --config ${{ matrix.build_type }}
-
-      - name: List build outputs
-        shell: bash
-        run: |
-          find . -name "*.${{ matrix.lib_ext }}" -not -path "*/.git/*"
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            ${{ matrix.output_dir }}/*.${{ matrix.lib_ext }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - uses: actions/checkout@v4
+    - name: Build
+      run: |
+        cmake -B ${{github.workspace}}/build -A x64
+        cmake --build ${{github.workspace}}/build --config Release
+    - name: Upload windows build
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows
+        path: ${{github.workspace}}/build/Analyzers/Release/*.dll
+  macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: |
+        cmake -B ${{github.workspace}}/build/x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=x86_64
+        cmake --build ${{github.workspace}}/build/x86_64
+        cmake -B ${{github.workspace}}/build/arm64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64
+        cmake --build ${{github.workspace}}/build/arm64
+    - name: Upload MacOS x86_64 build
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos_x86_64
+        path: ${{github.workspace}}/build/x86_64/Analyzers/*.so
+    - name: Upload MacOS arm64 build
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos_arm64
+        path: ${{github.workspace}}/build/arm64/Analyzers/*.so
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
+        cmake --build ${{github.workspace}}/build
+      env:
+        CC:   gcc-10
+        CXX:  g++-10
+    - name: Upload Linux build
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux
+        path: ${{github.workspace}}/build/Analyzers/*.so
+  publish:
+    needs: [windows, macos, linux]
+    runs-on: ubuntu-latest
+    steps:
+    - name: download individual builds
+      uses: actions/download-artifact@v4
+      with:
+        path: ${{github.workspace}}/artifacts
+    - name: zip
+      run: |
+        cd ${{github.workspace}}/artifacts
+        zip -r ${{github.workspace}}/analyzer.zip .
+    - uses: actions/upload-artifact@v4
+      with:
+        name: all-platforms
+        path: ${{github.workspace}}/artifacts/**
+    - name: create release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+          files: ${{github.workspace}}/analyzer.zip

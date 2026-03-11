@@ -1,83 +1,119 @@
-import os
-import glob
-import sys
+import os, glob, platform
 
-# Fix Python 2.x.
-try:
-    input = raw_input
-except NameError: pass
+#find out if we're running on mac or linux and set the dynamic library extension
+dylib_ext = ""
+if platform.system().lower() == "darwin":
+    dylib_ext = ".dylib"
+else:
+    dylib_ext = ".so"
+    
+print("Running on " + platform.system())
 
-print("")
-print("")
-print("What would you like to call your new analyzer?")
-print("")
-print(">>The files under '/source' will be modified to use it.")
-print(">>Examples include Serial, MySerial, JoesSerial, Gamecube, Wiimote, 2Wire, etc.")
-print(">>Do not inclide the trailing word 'Analyzer' this will be added automaticly.")
-print("")
-print("(press CTRL-C to cancel)")
-print("")
+#make sure the release folder exists, and clean out any .o/.so file if there are any
+if not os.path.exists( "release" ):
+    os.makedirs( "release" )
 
-new_analyzer_name = input( "Your new analyzer name: " )
-
-print("")
-print("")
-print("What is the analyzer's title? (as shown in the add new anlayzer drop down)")
-print("")
-print(">>Examples include Async Serial, I2C, Joe's Serial, Gamecube, Wiimote, 2Wire, etc.")
-print("")
-print("(press CTRL-C to cancel)")
-print("")
-
-new_analyzer_title = input( "Your new analyzer's title: " )
-
-original_name = "SimpleSerial"
-
-
-vs_project_path = "Visual Studio"
-os.chdir( vs_project_path )
-
-project_files = glob.glob("*.sln") + glob.glob("*.vcxproj") #returns only the file names, no paths.
-
-for file in project_files:
-	contents = open( file, 'r' ).read()
-	contents = contents.replace( original_name + "Analyzer", new_analyzer_name + "Analyzer" )
-	contents = contents.replace( original_name.upper() + "ANALYZER", new_analyzer_name.upper() + "ANALYZER" )
-	contents = contents.replace( original_name + "SimulationDataGenerator", new_analyzer_name + "SimulationDataGenerator" )
-	open( file, 'w' ).write( contents )
-
-os.rename( glob.glob("*.sln")[0], new_analyzer_name + "Analyzer.sln" )
-os.rename( glob.glob("*.vcxproj")[0], new_analyzer_name + "Analyzer.vcxproj" )
-
-source_path = "source"
+os.chdir( "release" )
+o_files = glob.glob( "*.o" )
+o_files.extend( glob.glob( "*" + dylib_ext ) )
+for o_file in o_files:
+    os.remove( o_file )
 os.chdir( ".." )
-os.chdir( source_path )
 
-files = dict()
 
+#make sure the debug folder exists, and clean out any .o/.so files if there are any
+if not os.path.exists( "debug" ):
+    os.makedirs( "debug" )
+
+os.chdir( "debug" )
+o_files = glob.glob( "*.o" );
+o_files.extend( glob.glob( "*" + dylib_ext ) )
+for o_file in o_files:
+    os.remove( o_file )
+os.chdir( ".." )
+
+#find all the cpp files in /source.  We'll compile all of them
+os.chdir( "source" )
 cpp_files = glob.glob( "*.cpp" );
-h_files = glob.glob( "*.h" );
+os.chdir( ".." )
 
-for file in cpp_files:
-    files[file] = ".cpp"
+#specify the search paths/dependencies/options for gcc
+include_paths = [ "./AnalyzerSDK/include" ]
+link_paths = [ "./AnalyzerSDK/lib" ]
+link_dependencies = [ "-lAnalyzer" ] #refers to libAnalyzer.dylib or libAnalyzer.so
 
-for file in h_files:
-    files[ file ] = ".h"
+debug_compile_flags = "-O0 -w -c -fpic -g"
+release_compile_flags = "-O3 -w -c -fpic"
 
-new_files = []
+#loop through all the cpp files, build up the gcc command line, and attempt to compile each cpp file
+for cpp_file in cpp_files:
 
-for file, extension in files.items():
-    name_root = file.replace( original_name, "" )
-    new_name = new_analyzer_name + name_root
-    #print "renaming file " + file + " to " + new_name
-    os.rename( file, new_name )
-    new_files.append( new_name )
+    #g++
+    command = "g++ "
 
-for file in new_files:
-	contents = open( file, 'r' ).read()
-	contents = contents.replace( original_name + "Analyzer", new_analyzer_name + "Analyzer" )
-	contents = contents.replace( original_name.upper() + "_ANALYZER_", new_analyzer_name.upper() + "_ANALYZER_" )
-	contents = contents.replace( original_name.upper() + "_SIMULATION_DATA_GENERATOR", new_analyzer_name.upper() + "_SIMULATION_DATA_GENERATOR" )
-	contents = contents.replace( original_name + "SimulationDataGenerator", new_analyzer_name + "SimulationDataGenerator" )
-	contents = contents.replace( "Simple Serial", new_analyzer_title )
-	open( file, 'w' ).write( contents )
+    #include paths
+    for path in include_paths: 
+        command += "-I\"" + path + "\" "
+
+    release_command = command
+    release_command  += release_compile_flags
+    release_command += " -o\"release/" + cpp_file.replace( ".cpp", ".o" ) + "\" " #the output file
+    release_command += "\"" + "source/" + cpp_file + "\"" #the cpp file to compile
+
+    debug_command = command
+    debug_command  += debug_compile_flags
+    debug_command += " -o\"debug/" + cpp_file.replace( ".cpp", ".o" ) + "\" " #the output file
+    debug_command += "\"" + "source/" + cpp_file + "\"" #the cpp file to compile
+
+    #run the commands from the command line
+    print(release_command)
+    os.system( release_command )
+    print(debug_command)
+    os.system( debug_command )
+    
+#lastly, link
+#g++
+command = "g++ "
+
+#add the library search paths
+for link_path in link_paths:
+    command += "-L\"" + link_path + "\" "
+
+#add libraries to link against
+for link_dependency in link_dependencies:
+    command += link_dependency + " "
+
+#make a dynamic (shared) library (.so/.dylib)
+
+if dylib_ext == ".dylib":
+    command += "-dynamiclib "
+else:
+    command += "-shared "
+
+#figgure out what the name of this analyzer is
+analyzer_name = ""
+for cpp_file in cpp_files:
+    if cpp_file.endswith( "Analyzer.cpp" ):
+        analyzer_name = cpp_file.replace( "Analyzer.cpp", "" )
+        break
+
+#the files to create (.so/.dylib files)
+if dylib_ext == ".dylib":
+    release_command = command + "-o release/lib" + analyzer_name + "Analyzer.dylib "
+    debug_command = command + "-o debug/lib" + analyzer_name + "Analyzer.dylib "
+else:
+    release_command = command + "-o\"release/lib" + analyzer_name + "Analyzer.so\" "
+    debug_command = command + "-o\"debug/lib" + analyzer_name + "Analyzer.so\" "
+
+#add all the object files to link
+for cpp_file in cpp_files:
+    release_command += "release/" + cpp_file.replace( ".cpp", ".o" ) + " "
+    debug_command += "debug/" + cpp_file.replace( ".cpp", ".o" ) + " "
+    
+#run the commands from the command line
+print(release_command)
+os.system( release_command )
+print(debug_command)
+os.system( debug_command )
+
+        

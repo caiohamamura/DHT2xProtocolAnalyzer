@@ -1,15 +1,30 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.13)
 
-project(CustomAnalyzer LANGUAGES CXX)
+project(DHTxxProtocolAnalyzer)
+
+# ------------------------------------------------------------
+# Logic version (user configurable)
+# ------------------------------------------------------------
+set(LOGIC 2 CACHE STRING "Saleae Logic version (1 or 2)")
+
+if(LOGIC EQUAL 2)
+    add_compile_definitions(LOGIC2)
+endif()
+
+message(STATUS "Building for Logic version: ${LOGIC}")
 
 # ------------------------------------------------------------
 # Compiler settings
 # ------------------------------------------------------------
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-add_compile_options(-w)
+
+# custom CMake Modules are located in the cmake directory.
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+
+include(ExternalAnalyzerSDK)
 
 # ------------------------------------------------------------
 # Detect architecture
@@ -29,7 +44,10 @@ message(STATUS "Using AnalyzerSDK library path: ${ANALYZER_LIB_DIR}")
 # ------------------------------------------------------------
 # Include directories
 # ------------------------------------------------------------
-include_directories(${CMAKE_SOURCE_DIR}/AnalyzerSDK/include)
+include_directories(
+    ${CMAKE_SOURCE_DIR}/AnalyzerSDK/include
+    ${CMAKE_SOURCE_DIR}/source
+)
 
 # ------------------------------------------------------------
 # Collect source files
@@ -37,43 +55,6 @@ include_directories(${CMAKE_SOURCE_DIR}/AnalyzerSDK/include)
 file(GLOB ANALYZER_SOURCES
      ${CMAKE_SOURCE_DIR}/source/*.cpp)
 
-# ------------------------------------------------------------
-# Detect analyzer name from *Analyzer.cpp
-# ------------------------------------------------------------
-set(ANALYZER_NAME "")
+set(SOURCES ${ANALYZER_SOURCES})
 
-foreach(FILE ${ANALYZER_SOURCES})
-    get_filename_component(FILENAME ${FILE} NAME)
-    if(FILENAME MATCHES "(.+)Analyzer\\.cpp$")
-        string(REGEX REPLACE "Analyzer\\.cpp$" "" ANALYZER_NAME ${FILENAME})
-        break()
-    endif()
-endforeach()
-
-if(ANALYZER_NAME STREQUAL "")
-    message(FATAL_ERROR "Could not determine analyzer name (no *Analyzer.cpp found)")
-endif()
-
-# ------------------------------------------------------------
-# Create shared library
-# ------------------------------------------------------------
-add_library(${ANALYZER_NAME}Analyzer SHARED ${ANALYZER_SOURCES})
-
-# ------------------------------------------------------------
-# Link directories and dependencies
-# ------------------------------------------------------------
-target_link_directories(${ANALYZER_NAME}Analyzer PRIVATE
-    ${ANALYZER_LIB_DIR}
-)
-
-target_link_libraries(${ANALYZER_NAME}Analyzer PRIVATE
-    Analyzer
-)
-
-# ------------------------------------------------------------
-# Output directories
-# ------------------------------------------------------------
-set_target_properties(${ANALYZER_NAME}Analyzer PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY_DEBUG   ${CMAKE_SOURCE_DIR}/debug
-    LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_SOURCE_DIR}/release
-)
+add_analyzer_plugin(${PROJECT_NAME} SOURCES ${SOURCES})

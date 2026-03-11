@@ -21,6 +21,14 @@ cmake -B build
 cmake --build build
 ```
 
+If you want to build for Logic Version 1.x:
+
+```bash
+cmake -B build -DLOGIC=1
+cmake --build build
+```
+
+
 ## Windows Requirements
 
 On Windows, you must previously:
