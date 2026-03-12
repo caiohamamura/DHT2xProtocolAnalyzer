@@ -8,6 +8,9 @@ DHT22ProtocolAnalyzer::DHT22ProtocolAnalyzer()
   mSimulationInitilized(false)
 {
     SetAnalyzerSettings(mSettings.get());
+    #ifdef LOGIC2
+    UseFrameV2();
+    #endif
 }
 
 DHT22ProtocolAnalyzer::~DHT22ProtocolAnalyzer()
@@ -109,6 +112,10 @@ void DHT22ProtocolAnalyzer::WorkerThread()
                 U64 value = 0;
                 U32 bit_pos = 0;
                 Frame frame;
+                #ifdef LOGIC2
+                    FrameV2 frame_v2;
+                #endif
+                
 
                 // Get Relative Humidity (16 bits)
                 for (; bit_pos < 16; bit_pos++)
@@ -118,6 +125,9 @@ void DHT22ProtocolAnalyzer::WorkerThread()
                 //we have a byte to save. 			
                 frame.mData1 = value;   // Value
                 frame.mData2 = 16;      // Bits per value width
+                #ifdef LOGIC2
+                frame_v2.AddInteger("Humidity", value);
+                #endif
                 frame.mFlags = 0;
                 frame.mType = DHT2xFrameType::RELATIVEHUMIDITY;
                 frame.mStartingSampleInclusive = pulse_widths[0].pulse_start;
@@ -133,6 +143,9 @@ void DHT22ProtocolAnalyzer::WorkerThread()
                 //we have a byte to save. 			
                 frame.mData1 = value;
                 frame.mData2 = 16;
+                #ifdef LOGIC2
+                frame_v2.AddInteger("Temperature", value);
+                #endif
                 frame.mFlags = 0;
                 frame.mType = DHT2xFrameType::TEMPERATURE;
                 frame.mStartingSampleInclusive = pulse_widths[16].pulse_start;
@@ -148,12 +161,18 @@ void DHT22ProtocolAnalyzer::WorkerThread()
                 //we have a byte to save. 			
                 frame.mData1 = value;
                 frame.mData2 = 8;
+                #ifdef LOGIC2
+                frame_v2.AddInteger("Checksum", value);
+                #endif
                 frame.mFlags = 0;
                 frame.mType = DHT2xFrameType::CHECKSUM;
                 frame.mStartingSampleInclusive = pulse_widths[32].pulse_start;
                 frame.mEndingSampleInclusive = pulse_widths[bit_pos + 31].pulse_end;
                 mResults->AddFrame(frame);
-
+                #ifdef LOGIC2
+                mResults->AddFrameV2( frame_v2, "dht_data", frame.mStartingSampleInclusive, frame.mEndingSampleInclusive ); 
+                #endif
+                
                 mResults->CommitResults();
                 ReportProgress(frame.mEndingSampleInclusive);
                 pulse_widths.clear();
